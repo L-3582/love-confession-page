@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>想约你吃顿好吃的</title>
+  <style>
+    :root {
+      --cream: #fffaf3;
+      --cream-deep: #fdf0db;
+      --pink: #f6c8d8;
+      --pink-deep: #ee8cae;
+      --rose: #e79cc3;
+      --lavender: #d9c7f4;
+      --text: #5d4b63;
+      --muted: #8b728a;
+      --white: #ffffff;
+      --shadow: 0 12px 32px rgba(103, 77, 118, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: linear-gradient(135deg, var(--cream) 0%, var(--cream-deep) 55%, #f3e9ff 100%);
+      color: var(--text);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 14px;
+    }
+
+    .app {
+      width: min(100%, 460px);
+      min-height: calc(100vh - 28px);
+      position: relative;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 0 2px;
+    }
+
+    .heart-count, .mute-btn {
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 6px 16px rgba(109, 80, 125, 0.1);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-weight: 700;
+      backdrop-filter: blur(8px);
+    }
+
+    .heart-count {
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+    }
+
+    .mute-btn {
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: transform 0.2s ease;
+    }
+
+    .mute-btn:active { transform: scale(0.96); }
+
+    .page {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.78);
+      border-radius: 28px;
+      padding: 24px 18px 26px;
+      box-shadow: var(--shadow);
+      min-height: calc(100vh - 100px);
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .page.active {
+      display: flex;
+      animation: popIn 0.45s ease both;
+    }
+
+    .page::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 22px;
+      border: 1px dashed rgba(238, 140, 174, 0.24);
+      pointer-events: none;
+    }
+
+    .label-small {
+      font-size: 0.82rem;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .title {
+      font-size: clamp(1.28rem, 4vw, 1.7rem);
+      line-height: 1.42;
+      font-weight: 800;
+      margin: 0 0 10px;
+    }
+
+    .subtitle {
+      font-size: 0.98rem;
+      line-height: 1.6;
+      color: var(--muted);
+      margin: 0 0 16px;
+      max-width: 320px;
+    }
+
+    .pixel-heart {
+      font-size: 4.4rem;
+      margin: 8px 0 12px;
+      filter: drop-shadow(0 6px 0 rgba(238, 140, 174, 0.28));
+      transform: rotate(-4deg);
+      animation: floaty 2s ease-in-out infinite;
+    }
+
+    .pixel-envelope {
+      font-size: 5.1rem;
+      margin: 16px 0 12px;
+      filter: drop-shadow(0 8px 0 rgba(238, 140, 174, 0.24));
+      animation: wobble 2.2s ease-in-out infinite;
+    }
+
+    .pixel-bubble {
+      font-size: 3.7rem;
+      margin: 12px 0 16px;
+      filter: drop-shadow(0 8px 0 rgba(217, 199, 244, 0.3));
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 13px 22px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--white);
+      box-shadow: 0 8px 18px rgba(238, 140, 174, 0.24);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--pink), var(--pink-deep));
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #cfc6d8, #a89eb4);
+      box-shadow: none;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .dialog-card {
+      background: var(--white);
+      border-radius: 24px;
+      padding: 20px 16px;
+      width: min(100%, 320px);
+      box-shadow: 0 10px 24px rgba(91, 74, 112, 0.12);
+      position: relative;
+    }
+
+    .dialog-title {
+      font-size: 1.08rem;
+      font-weight: 800;
+      margin: 0 0 8px;
+    }
+
+    .dialog-text {
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+    }
+
+    .choice-box {
+      position: relative;
+      width: 100%;
+      min-height: 190px;
+      border-radius: 20px;
+      padding: 18px 10px 24px;
+      background: linear-gradient(145deg, #fff9fb, #f4e8f7);
+      margin-top: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .escape-btn {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: #c9c2d2;
+      color: var(--text);
+      box-shadow: 0 6px 14px rgba(91, 74, 112, 0.15);
+    }
+
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .option-card {
+      position: relative;
+      border: 2px solid #f2dbe6;
+      border-radius: 18px;
+      padding: 12px 8px;
+      background: var(--white);
+      box-shadow: 0 6px 16px rgba(107, 82, 123, 0.08);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .option-card:active { transform: scale(0.98); }
+    .option-card.selected {
+      border-color: var(--pink-deep);
+      box-shadow: 0 10px 20px rgba(238, 140, 174, 0.18);
+      transform: translateY(-2px);
+    }
+
+    .check-mark {
+      display: none;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 0.9rem;
+      color: var(--pink-deep);
+    }
+
+    .option-card.selected .check-mark { display: block; }
+
+    .time-list {
+      display: grid;
+      gap: 10px;
+      width: 100%;
+      margin: 10px 0 12px;
+    }
+
+    .time-card {
+      border: 2px solid #f2dbe6;
+      background: var(--white);
+      border-radius: 16px;
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .time-card.selected {
+      border-color: var(--pink-deep);
+      background: linear-gradient(135deg, #fff5fa, #f8e7f4);
+    }
+
+    .input-box {
+      width: 100%;
+      border: 2px solid #f2dbe6;
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 0.96rem;
+      resize: vertical;
+      min-height: 96px;
+      outline: none;
+      color: var(--text);
+      background: #fffdfd;
+      margin-bottom: 10px;
+    }
+
+    .quick-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .quick-tag {
+      border: none;
+      background: #f8e9f3;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      cursor: pointer;
+    }
+
+    .footer-note {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(74, 57, 91, 0.36);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 30;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .summary-card {
+      background: var(--white);
+      border-radius: 24px;
+      padding: 20px 18px;
+      width: min(100%, 360px);
+      box-shadow: var(--shadow);
+      text-align: left;
+    }
+
+    .summary-card h3 {
+      margin: 0 0 12px;
+      font-size: 1.08rem;
+    }
+
+    .summary-card p {
+      margin: 6px 0;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .summary-card .btn { margin-top: 10px; width: 100%; }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(14px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0) rotate(-4deg); }
+      50% { transform: translateY(-6px) rotate(-2deg); }
+    }
+
+    @keyframes wobble {
+      0%, 100% { transform: rotate(-3deg); }
+      50% { transform: rotate(3deg); }
+    }
+
+    @media (max-width: 420px) {
+      body { padding: 10px; }
+      .page { min-height: calc(100vh - 86px); padding: 20px 14px 24px; }
+      .title { font-size: 1.2rem; }
+      .subtitle { font-size: 0.92rem; }
+      .option-card { min-height: 70px; font-size: 0.88rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top-bar">
+      <div class="heart-count" id="heartCount">♥ 1</div>
+      <button class="mute-btn" id="muteBtn" aria-label="切换背景音乐">🔊</button>
+    </header>
+
+    <section class="page active" data-page="1">
+      <div class="label-small">love confession</div>
+      <h1 class="title">想约你吃顿好吃的<br />准备了一个小Moment</h1>
+      <p class="subtitle">请收下这份约饭邀请</p>
+      <div class="pixel-envelope">💌</div>
+      <button class="btn btn-primary" id="openBtn">轻触打开→</button>
+    </section>
+
+    <section class="page" data-page="2">
+      <div class="label-small">A LITTLE SOMETHING</div>
+      <p class="subtitle">来自一个很在意你的人。<br />TA想认真约你吃一顿好吃的</p>
+      <div class="pixel-heart">💗</div>
+      <button class="btn btn-primary" id="continueBtn">继续→</button>
+    </section>
+
+    <section class="page" data-page="3">
+      <div class="dialog-card">
+        <h2 class="dialog-title">要不要答应我呢？</h2>
+        <p class="dialog-text">这次的邀约很认真，愿不愿意跟我一起把这顿饭吃成一个小小的心动瞬间？</p>
+        <div class="choice-box" id="choiceBox">
+          <button class="btn btn-primary" id="agreeBtn">愿意</button>
+          <button class="btn escape-btn" id="rejectBtn">再想想嘛</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" data-page="4">
+      <div class="label-small">choose your meal</div>
+      <h2 class="title">我们吃点什么？</h2>
+      <div class="option-grid">
+        <button class="option-card" data-group="food" data-value="披萨"><span class="check-mark">✓</span>披萨</button>
+        <button class="option-card" data-group="food" data-value="寿司"><span class="check-mark">✓</span>寿司</button>
+        <button class="option-card" data-group="food" data-value="火锅"><span class="check-mark">✓</span>火锅</button>
+        <button class="option-card" data-group="food" data-value="烧肉"><span class="check-mark">✓</span>烧肉</button>
+        <button class="option-card" data-group="food" data-value="早茶"><span class="check-mark">✓</span>早茶</button>
+        <button class="option-card" data-group="food" data-value="拉面"><span class="check-mark">✓</span>拉面</button>
+        <button class="option-card" data-group="food" data-value="麻辣烫"><span class="check-mark">✓</span>麻辣烫</button>
+        <button class="option-card" data-group="food" data-value="小龙虾"><span class="check-mark">✓</span>小龙虾</button>
+        <button class="option-card" data-group="food" data-value="其他"><span class="check-mark">✓</span>其他</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="foodNextBtn">继续→</button>
+      </div>
+    </section>
+
+    <section class="page" data-page="5">
+      <div class="label-small">where to meet</div>
+      <h2 class="title">想去哪里见面？</h2>
+      <div class="option-grid">
+        <button class="option-card" data-group="place" data-value="咖啡馆"><span class="check-mark">✓</span>咖啡馆</button>
+        <button class="option-card" data-group="place" data-value="餐厅"><span class="check-mark">✓</span>餐厅</button>
+        <button class="option-card" data-group="place" data-value="电影院"><span class="check-mark">✓</span>电影院</button>
+        <button class="option-card" data-group="place" data-value="公园"><span class="check-mark">✓</span>公园</button>
+        <button class="option-card" data-group="place" data-value="商场"><span class="check-mark">✓</span>商场</button>
+        <button class="option-card" data-group="place" data-value="海边"><span class="check-mark">✓</span>海边</button>
+        <button class="option-card" data-group="place" data-value="展览馆"><span class="check-mark">✓</span>展览馆</button>
+        <button class="option-card" data-group="place" data-value="我家附近"><span class="check-mark">✓</span>我家附近</button>
+        <button class="option-card" data-group="place" data-value="其他"><span class="check-mark">✓</span>其他</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="placeNextBtn">继续→</button>
+      </div>
+    </section>
+
+    <section class="page" data-page="6">
+      <div class="label-small">time and note</div>
+      <h2 class="title">什么时候最合适？</h2>
+      <div class="time-list">
+        <button class="time-card" data-time="今天晚上">今天晚上</button>
+        <button class="time-card" data-time="明天下午">明天下午</button>
+        <button class="time-card" data-time="周末全天">周末全天</button>
+        <button class="time-card" data-time="下周都可以">下周都可以</button>
+      </div>
+      <textarea class="input-box" id="noteInput" placeholder="想说的留言也可以写在这里..."></textarea>
+      <div class="quick-tags">
+        <button class="quick-tag" data-message="我很想见你。">我很想见你。</button>
+        <button class="quick-tag" data-message="这次一定要一起吃好吃的。">这次一定要一起吃好吃的。</button>
+        <button class="quick-tag" data-message="我想认真陪你。">我想认真陪你。</button>
+      </div>
+      <button class="btn btn-primary" id="submitBtn">提交邀约</button>
+      <p class="footer-note">点击后会把你的选择汇总成一份小小心意。</p>
+    </section>
+  </div>
+
+  <div class="modal-overlay" id="summaryModal">
+    <div class="summary-card">
+      <h3>邀约小结</h3>
+      <p id="summaryFood">美食：尚未选择</p>
+      <p id="summaryPlace">地点：尚未选择</p>
+      <p id="summaryTime">时间：尚未选择</p>
+      <p id="summaryNote">留言：还没有写呢</p>
+      <button class="btn btn-primary" id="closeModalBtn">再看一眼</button>
+    </div>
+  </div>
+
+  <script>
+    const pages = Array.from(document.querySelectorAll('.page'));
+    const heartCountEl = document.getElementById('heartCount');
+    const muteBtn = document.getElementById('muteBtn');
+    const summaryModal = document.getElementById('summaryModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const noteInput = document.getElementById('noteInput');
+
+    const state = {
+      currentPage: 1,
+      food: '',
+      place: '',
+      time: '',
+      message: ''
+    };
+
+    let audioCtx = null;
+    let masterGain = null;
+    let isMuted = false;
+    let noteTimer = null;
+
+    function updateHeartCount() {
+      heartCountEl.innerHTML = `♥ ${state.currentPage}`;
+    }
+
+    function showPage(index) {
+      if (index < 1 || index > pages.length) return;
+      state.currentPage = index;
+      pages.forEach(page => page.classList.remove('active'));
+      pages[index - 1].classList.add('active');
+      updateHeartCount();
+    }
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        audioCtx = new AudioContext();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = isMuted ? 0 : 0.03;
+        masterGain.connect(audioCtx.destination);
+      }
+
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const notes = [392, 523, 659, 784];
+      let tick = 0;
+
+      function playNote() {
+        if (!audioCtx || isMuted) return;
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = notes[tick % notes.length];
+        gainNode.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.03, audioCtx.currentTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.75);
+        osc.connect(gainNode).connect(masterGain);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.8);
+        tick += 1;
+        noteTimer = window.setTimeout(playNote, 850);
+      }
+
+      if (noteTimer) clearTimeout(noteTimer);
+      playNote();
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      if (!audioCtx) {
+        ensureAudio();
+      }
+      if (masterGain) {
+        masterGain.gain.value = isMuted ? 0 : 0.03;
+      }
+      muteBtn.textContent = isMuted ? '🔇' : '🔊';
+    }
+
+    function bindFoodSelection() {
+      document.querySelectorAll('.option-card[data-group="food"]').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.option-card[data-group="food"]').forEach(item => item.classList.remove('selected'));
+          card.classList.add('selected');
+          state.food = card.dataset.value;
+        });
+      });
+    }
+
+    function bindPlaceSelection() {
+      document.querySelectorAll('.option-card[data-group="place"]').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.option-card[data-group="place"]').forEach(item => item.classList.remove('selected'));
+          card.classList.add('selected');
+          state.place = card.dataset.value;
+        });
+      });
+    }
+
+    function bindTimeSelection() {
+      document.querySelectorAll('.time-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.time-card').forEach(item => item.classList.remove('selected'));
+          card.classList.add('selected');
+          state.time = card.dataset.time;
+        });
+      });
+    }
+
+    function bindQuickTags() {
+      document.querySelectorAll('.quick-tag').forEach(tag => {
+        tag.addEventListener('click', () => {
+          const message = tag.dataset.message;
+          noteInput.value = message;
+          state.message = message;
+        });
+      });
+    }
+
+    function updateSummary() {
+      document.getElementById('summaryFood').textContent = `美食：${state.food || '尚未选择'}`;
+      document.getElementById('summaryPlace').textContent = `地点：${state.place || '尚未选择'}`;
+      document.getElementById('summaryTime').textContent = `时间：${state.time || '尚未选择'}`;
+      document.getElementById('summaryNote').textContent = `留言：${state.message || noteInput.value || '还没有写呢'}`;
+    }
+
+    function openSummary() {
+      state.message = noteInput.value.trim();
+      updateSummary();
+      summaryModal.classList.add('active');
+    }
+
+    function closeSummary() {
+      summaryModal.classList.remove('active');
+    }
+
+    document.getElementById('openBtn').addEventListener('click', () => showPage(2));
+    document.getElementById('continueBtn').addEventListener('click', () => showPage(3));
+    document.getElementById('agreeBtn').addEventListener('click', () => showPage(4));
+    document.getElementById('foodNextBtn').addEventListener('click', () => showPage(5));
+    document.getElementById('placeNextBtn').addEventListener('click', () => showPage(6));
+    document.getElementById('submitBtn').addEventListener('click', openSummary);
+    closeModalBtn.addEventListener('click', closeSummary);
+    summaryModal.addEventListener('click', (event) => {
+      if (event.target === summaryModal) closeSummary();
+    });
+
+    muteBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      toggleMute();
+    });
+
+    const rejectBtn = document.getElementById('rejectBtn');
+    const choiceBox = document.getElementById('choiceBox');
+
+    function moveRejectButton() {
+      const rect = choiceBox.getBoundingClientRect();
+      const buttonWidth = rejectBtn.offsetWidth;
+      const buttonHeight = rejectBtn.offsetHeight;
+      const maxLeft = Math.max(0, rect.width - buttonWidth - 12);
+      const maxTop = Math.max(0, rect.height - buttonHeight - 12);
+      const left = Math.random() * maxLeft;
+      const top = Math.random() * maxTop;
+      rejectBtn.style.left = `${left}px`;
+      rejectBtn.style.top = `${top}px`;
+      rejectBtn.style.transform = 'translate(0, 0)';
+    }
+
+    rejectBtn.addEventListener('mouseenter', moveRejectButton);
+    rejectBtn.addEventListener('mousemove', moveRejectButton);
+    rejectBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      moveRejectButton();
+    });
+
+    noteInput.addEventListener('input', () => {
+      state.message = noteInput.value.trim();
+    });
+
+    document.addEventListener('pointerdown', ensureAudio, { once: true });
+    document.addEventListener('touchstart', ensureAudio, { once: true });
+    document.addEventListener('keydown', ensureAudio, { once: true });
+
+    bindFoodSelection();
+    bindPlaceSelection();
+    bindTimeSelection();
+    bindQuickTags();
+    updateHeartCount();
+  </script>
+</body>
+</html>
