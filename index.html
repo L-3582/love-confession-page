@@ -390,6 +390,9 @@
   </style>
 </head>
 <body>
+  <audio id="bgMusic" loop preload="auto" muted playsinline>
+    <source src="./audio/bgm.mp3" type="audio/mpeg">
+  </audio>
   <div class="app">
     <header class="top-bar">
       <div class="heart-count" id="heartCount">♥ 1</div>
@@ -559,6 +562,9 @@
 
       if (noteTimer) clearTimeout(noteTimer);
       playNote();
+
+      const bgMusic = document.getElementById('bgMusic');
+      bgMusic.muted = false; bgMusic.play().catch(err=>{});
     }
 
     function toggleMute() {
@@ -682,5 +688,6 @@
     bindQuickTags();
     updateHeartCount();
   </script>
+
 </body>
 </html>
